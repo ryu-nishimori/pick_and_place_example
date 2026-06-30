@@ -59,7 +59,8 @@ RUN sudo apt-get update &&\
 
 #====  Install runtime Dependencies ====
 RUN sudo apt-get update && sudo apt-get install -y python3-pip
-RUN sudo pip install numpy-stl
+RUN sudo pip install "numpy-stl==3.2.0" && \
+    sudo pip install "numpy==1.23.5"
 RUN sudo apt-get update && \
     sudo apt-get install -y ros-humble-joint-state-publisher && \
     sudo apt-get install -y ros-humble-depth-image-proc && \
