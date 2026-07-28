@@ -45,6 +45,9 @@ from scipy.spatial.transform import Rotation as R
 
 from hsrb_interface import geometry  # noqa : F401
 from hsrb_interface import Robot
+from hsrb_interface import settings
+
+from rclpy.executors import SingleThreadedExecutor
 
 class HsrbPickAndPlace(Node):
     """
@@ -99,6 +102,8 @@ class HsrbPickAndPlace(Node):
 
         # Grasp Pose
         self.grasp_detection = None
+
+        settings.load_settings()
 
         # Initialize the robot
         self.robot = Robot()
@@ -205,9 +210,6 @@ class HsrbPickAndPlace(Node):
         # Move to go arm config
         self.move_arm_to_go()
 
-        # Search for the object, this could be a routine for the robot to look around
-        # looking for the object
-        # For now, we just look at a fixed point
         pos = request.pos
         self.whole_body.gaze_point(pos, 'base_link')
 
@@ -413,14 +415,13 @@ class HsrbPickAndPlace(Node):
         quat = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
         self.whole_body.move_end_effector_pose((pos, quat), pose.header.frame_id)
 
-    def move_ee_by_line(self, axis: list, distance: float, ref_frame: str = "hand_palm_link") -> None:
+    def move_ee_by_line(self, axis: list, distance: float) -> None:
         """
         @brief Move the end effector by a line in the given axis.
         @param axis Axis to move the end effector in [x, y, z]
         @param distance Distance to move the end effector
-        @param ref_frame Reference frame to move the end effector in
         """
-        self.whole_body.move_end_effector_by_line(axis, distance, ref_frame)
+        self.whole_body.move_end_effector_by_line(axis, distance)
 
     def move_arm_to_neutral(self) -> None:
         """
@@ -681,11 +682,16 @@ def main(args=None):
     """
     rclpy.init(args=args)
     node = HsrbPickAndPlace()
+
+    executor = SingleThreadedExecutor()
+    executor.add_node(node)
+
     try:
-        rclpy.spin(node)
+        rclpy.spin(node, executor=executor)
     except KeyboardInterrupt:
         pass
     finally:
+        executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
 
